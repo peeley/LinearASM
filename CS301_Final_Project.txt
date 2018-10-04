@@ -1,0 +1,102 @@
+; Space = 0x32
+; \n = 0x10
+; , = 0x44
+; 0-9 = 0x48-0x57
+; [ = 0x91
+; ] = 0x93
+
+push rbx
+mov rbx, rsp	; Store stack pointer
+
+getInput:
+extern getchar
+call getchar
+
+cmp rax, 32
+je spaceEntered
+
+cmp rax, 10
+je newlineEntered
+
+cmp rax, 44
+je commaEntered
+
+cmp rax, 91
+je openBracketEntered
+
+cmp rax, 93
+je closedBracketEntered
+
+add rax,-48
+push rax		; Store integers
+;add r12, 1		; Track number of elements
+mov rcx, numberElements
+cmp QWORD[numberElements+8],1
+je getInput
+add QWORD[rcx], 1
+jmp getInput
+
+inputHandled:
+
+mov rdi,[numberElements]
+imul rdi,8
+extern malloc
+call malloc
+mov rdi, rax
+
+mov rdx, [numberElements]
+imul rdx,16
+add rdx, rsp
+
+mov rcx, 0		; Counter from 0 to number of elements
+addingElements:
+add rdx, -8
+mov r8, [rdx]
+mov QWORD[rdi+rcx*8],r8
+mov r9, [numberElements]
+imul r9,-8
+mov r8, [rdx+r9]
+add QWORD[rdi+rcx*8],r8
+add rcx,1
+cmp rcx, [numberElements]
+jl addingElements
+
+mov rsi,[numberElements]
+extern larray_print
+call larray_print
+
+clearStack:
+add rsp,8
+cmp rsp,rbx
+jne clearStack
+
+mov rax,numberElements
+mov rax,[rax]
+pop rbx
+ret
+
+section .data
+numberElements:
+	dq 0		; Number of elements
+	dq 0		; Becomes 1 once the first matrix has been fully received
+					; When it is 1, numberElements[0] stops incrementing
+	
+spaceEntered:
+	jmp getInput
+
+newlineEntered:
+	jmp getInput
+
+commaEntered:
+	jmp getInput
+
+openBracketEntered:
+	jmp getInput
+
+closedBracketEntered:
+	mov rcx,numberElements
+	add rcx,8
+	cmp QWORD[rcx], 1
+	je inputHandled
+	mov QWORD[rcx], 1
+	jmp getInput
