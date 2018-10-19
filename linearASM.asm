@@ -12,54 +12,93 @@ extern printf
 extern puts
 
 ; traverseMatrix : print contents of given matrix
-; rdi = ptr to matrix A
+; rdi = ptr to matrix A (gets changed to rdx to pass to printf)
 ; rsi = rows of A
 ; rdx = cols of A
 traverseMatrix:
-	mov rcx, rsi
-	imul rcx, rdx ; gives total items of array
+	mov rcx, rsi					; number of rows
+	imul rcx, rdx 					; gives total items of array (rows x cols)
 	
-	mov rsi, rdi
-	
-	mov rax, Acols
-	mov QWORD[rax],rdx
-	
-	push rsi
+	mov rax, Acols					; pointer to Acols
+	mov QWORD[rax],rdx				; stores number of cols
+		
+	mov rdx, rdi					; pointer to matrix
+			
+	mov r8, 0						; iterator through matrix
+	mov QWORd[mostDigits],0
+	findBiggestDigit:				; find number of digits in largest number of matrix
+		mov r9, 0					; where number of digits is stored temporarily
+		cmp QWORD[rdx+r8*8],10
+		jl one
+		cmp QWORD[rdx+r8*8],100
+		jl two
+		cmp QWORD[rdx+r8*8],1000
+		jl three
+		cmp QWORD[rdx+r8*8],10000
+		jl four
+		cmp QWORD[rdx+r8*8],100000
+		jl five
+		
+		five:
+		add r9,1
+		four:
+		add r9,1
+		three:
+		add r9,1
+		two:
+		add r9,1
+		one:
+		add r9,1
+		
+		cmp QWORD[mostDigits],r9
+		jg bigger
+		mov QWORD[mostDigits],r9
+		bigger:
+		
+		add r8, 1
+		cmp r8, rcx
+		jne findBiggestDigit
+		
+	push rdx
 	push rcx
-	mov rdi, openBracket
+	mov rdi, openBracket			; print bracket at start of array
 	call puts
 	pop rcx
-	pop rsi
+	pop rdx
 	
-	loopTraverse:
-		push rdi
-		push rsi
+	loopTraverse:					; loop through matrix
+		push rdi					; registers to preserve between loops
+		push rdx
 		push rcx
 		
-		mov rdi, formatInt
-		mov rsi, [rsi]
-		call printf ; Print out item at rdi pointer
-		mov rdi, formatChar
+		mov rdi, formatIntWidth		; formatIntWidth: db `%*d`,0
+		mov rsi, QWORD[mostDigits]
+		mov rdx, [rdx]				; the value in the matrix
+		call printf 				; Print out item at rdx pointer
+		
+		mov rdi, formatChar			
 		mov rsi, ' '
-		call printf
+		call printf					; to print a space between matrix elements
 		
-		pop rax
+		mov rax, [rsp]
 		mov rcx, [Acols]
-		push rax
 		mov rdx, 0
-		div rcx
-		cmp rdx, 1
+		div rcx						; returns (rax mod rcx) in rdx
+		cmp rdx, 1					; when (currentCol mod numCols) = 1, print a new line
 		
-		jne noPrint
+		jne noNewLine
 			mov rdi, formatNewLine
 			call printf
-		noPrint:
+		noNewLine:
 		
 		pop rcx
-		pop rsi
+		pop rdx
 		pop rdi
-		add rsi, 8 ; Add size of one int
-		loop loopTraverse
+		add rdx, 8 					; move to next element in matrix
+		
+		sub rcx, 1					; decrement counter
+		cmp rcx, 0
+		jne loopTraverse
 	
 	mov rdi, closeBracket
 	call puts
@@ -113,6 +152,8 @@ formatChar:
 	
 formatInt:
 	db `%d`,0
+formatIntWidth:
+	db `%*d`,0
 
 section .data
 openBracket:
@@ -124,6 +165,8 @@ matrixA:
 Arows:
 	dq 0
 Acols:
+	dq 0
+mostDigits:
 	dq 0
 	
 matrixB:
