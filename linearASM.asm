@@ -4,11 +4,11 @@
 ; In NetRun, set options as follows:
 ; Mode: whole function, long foo(void), link with linearC.
 
-
 global traverseMatrix
 global addMatrix
 global subMatrix
 extern print_long
+extern printf
 extern puts
 
 ; traverseMatrix : print contents of given matrix
@@ -18,24 +18,51 @@ extern puts
 traverseMatrix:
 	mov rcx, rsi
 	imul rcx, rdx ; gives total items of array
-	push rdi
+	
+	mov rsi, rdi
+	
+	mov rax, Acols
+	mov QWORD[rax],rdx
+	
+	push rsi
 	push rcx
 	mov rdi, openBracket
 	call puts
 	pop rcx
-	pop rdi
+	pop rsi
+	
 	loopTraverse:
 		push rdi
+		push rsi
 		push rcx
-		mov rdi, [rdi]
-		call print_long ; Print out item at rdi pointer
+		
+		mov rdi, formatInt
+		mov rsi, [rsi]
+		call printf ; Print out item at rdi pointer
+		mov rdi, formatChar
+		mov rsi, ' '
+		call printf
+		
+		pop rax
+		mov rcx, [Acols]
+		push rax
+		mov rdx, 0
+		div rcx
+		cmp rdx, 1
+		
+		jne noPrint
+			mov rdi, formatNewLine
+			call printf
+		noPrint:
+		
 		pop rcx
+		pop rsi
 		pop rdi
-		add rdi, 8 ; Add size of one int
+		add rsi, 8 ; Add size of one int
 		loop loopTraverse
+	
 	mov rdi, closeBracket
 	call puts
-	mov rax, 0
 	ret
 	
 ; addMatrix : compute A+B element-wise
@@ -78,8 +105,16 @@ subMatrix:
 	mov rax, 0
 	ret
 	
-section .data
+formatNewLine:
+	db `\n`,0
 
+formatChar:
+	db `%c`,0
+	
+formatInt:
+	db `%d`,0
+
+section .data
 openBracket:
 	db '[',0
 closeBracket:
