@@ -52,7 +52,8 @@ traverseMatrix:
 		
 		cmp QWORD[mostDigits],r9
 		jg bigger
-		mov QWORD[mostDigits],r9
+		mov QWORD[mostDigits],r9	; store number of digits if it is bigger that what is
+										; currently stored
 		bigger:
 		
 		add r8, 1
@@ -80,7 +81,7 @@ traverseMatrix:
 		mov rsi, ' '
 		call printf					; to print a space between matrix elements
 		
-		cmp QWORD[Acols],1
+		cmp QWORD[Acols],1			; if there is only 1 column, always print new line
 		je newLine
 		
 		mov rax, [rsp]
@@ -115,13 +116,13 @@ traverseMatrix:
 ; rcx = ptr to matrix B
 addMatrix:
 	mov r9, rsi
-	imul r9, rdx ; get total elements of array
+	imul r9, rdx			; get total elements of array
 	loopAdd:
 		mov r8, [rdi]
-		add r8, [rcx] ; add each element's value
-		mov [rdi], r8   ; move new value into matrix A
+		add r8, [rcx] 		; add each element's value
+		mov [rdi], r		; move new value into matrix A
 		add rdi, 8	
-		add rcx, 8	; increment both array pointers by one entry
+		add rcx, 8			; increment both array pointers by one entry
 		sub r9, 1
 		cmp r9, 0
 		jg loopAdd
@@ -135,13 +136,13 @@ addMatrix:
 ; rcx = ptr to matrix B	
 subMatrix:
 	mov r9, rsi
-	imul r9, rdx ; get total elements of array
+	imul r9, rdx 			; get total elements of array
 	loopSub:
 		mov r8, [rdi]
-		sub r8, [rcx] ; add each element's value
-		mov [rdi], r8   ; move new value into matrix A
+		sub r8, [rcx		; add each element's value
+		mov [rdi], r8   	; move new value into matrix A
 		add rdi, 8	
-		add rcx, 8	; increment both array pointers by one entry
+		add rcx, 8			; increment both array pointers by one entry
 		sub r9, 1
 		cmp r9, 0
 		jg loopSub
