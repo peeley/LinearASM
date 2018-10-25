@@ -87,7 +87,7 @@ traverseMatrix:
 		mov rcx, [Acols]
 		mov rdx, 0
 		div rcx						; returns (rax mod rcx) in rdx
-		cmp rdx, 1					; when 
+		cmp rdx, 1					; when (currentCol mod numCols) = 1, print a new line
 		
 		jne noNewLine
 		newLine:
@@ -98,9 +98,9 @@ traverseMatrix:
 		pop rcx
 		pop rdx
 		pop rdi
-		add rdx, 8 ; Add size of one int
+		add rdx, 8 					; Add size of one int
 		
-		sub rcx, 1
+		sub rcx, 1					; decrement counter
 		cmp rcx, 0
 		jne loopTraverse
 	
