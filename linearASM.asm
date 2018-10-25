@@ -7,6 +7,7 @@
 global traverseMatrix
 global addMatrix
 global subMatrix
+global mulMatrix
 extern print_long
 extern printf
 extern puts
@@ -19,8 +20,7 @@ traverseMatrix:
 	mov rcx, rsi					; number of rows
 	imul rcx, rdx 					; gives total items of array (rows x cols)
 	
-	mov rax, Acols					; pointer to Acols
-	mov QWORD[rax],rdx				; stores number of cols
+	mov QWORD[Acols], rdx			; stores number of cols
 		
 	mov rdx, rdi					; pointer to matrix
 			
@@ -80,13 +80,17 @@ traverseMatrix:
 		mov rsi, ' '
 		call printf					; to print a space between matrix elements
 		
+		cmp QWORD[Acols],1
+		je newLine
+		
 		mov rax, [rsp]
 		mov rcx, [Acols]
 		mov rdx, 0
 		div rcx						; returns (rax mod rcx) in rdx
-		cmp rdx, 1					; when (currentCol mod numCols) = 1, print a new line
+		cmp rdx, 1					; when 
 		
 		jne noNewLine
+		newLine:
 			mov rdi, formatNewLine
 			call printf
 		noNewLine:
@@ -94,9 +98,9 @@ traverseMatrix:
 		pop rcx
 		pop rdx
 		pop rdi
-		add rdx, 8 					; move to next element in matrix
+		add rdx, 8 ; Add size of one int
 		
-		sub rcx, 1					; decrement counter
+		sub rcx, 1
 		cmp rcx, 0
 		jne loopTraverse
 	
@@ -143,6 +147,76 @@ subMatrix:
 		jg loopSub
 	mov rax, 0
 	ret
+
+; mulMatrix : compute A*B element wise
+; rdi = ptr to matrix A
+; rsi = rows of matrix A
+; rdx = cols of matrice A
+; rcx = ptr to matrix B	
+; r8  = rows of matrix B
+; r9  = cols of matrix B
+; [rsp+8] = ptr to matrix C
+mulMatrix:
+	mov r10,[rsp+8]			; ptr to matrix C (result matrix)
+	
+	mov QWORD[Arows], rsi
+	mov QWORD[Acols], rdx
+	mov QWORD[Brows], r8
+	mov QWORD[Bcols], r9
+	
+							; rdi is ptr to matrix A
+	mov rsi, rcx			; ptr to matrix B
+	
+	imul r9,8
+	mov QWORD[nextRowB],r9	; memory space to move to get to next row of matrix B
+	
+	mov rcx, 0				; counter for Acols and Brows
+	mov rdx, 0				; counter for Arows
+	mov r8, 0				; counter for Bcols
+	
+	rowALoop:				; loop through the rows of matrix A
+		mov r8, 0
+		colBLoop:			; loop through the columns of matrix B
+			mov rax, 0
+			mov rcx, 0
+			generalLoop:	; loop through the columns of A and rows of B
+							; to find which elements of each matrix need to be multiplied
+				push rax					; keep a running total of multiplied elements
+				mov rax, QWORD[rdi+rcx*8]	; element of matrix A to be multiplied
+				mov r9, QWORD[nextRowB]		; memory to move to next row of B
+				imul r9, rcx				; number of rows of B to move
+				push r9
+				mov r9, 0					
+				add r9, r8					; number of columns of B to move
+				imul r9, 8					; start of the column of B being multiplied
+				add [rsp],r9				; including column offset to rows moved
+				pop r9
+				imul rax, QWORD[rsi+r9]		; multiply element of A by corresponding 
+												; element of B
+				add QWORD[rsp],rax			; adds value to running total
+				pop rax
+				
+				add rcx,1
+				cmp rcx, QWORD[Acols]
+				jne generalLoop
+				
+			mov QWORD[r10],rax				; set value in matrix C
+			add r10, 8						; move to next value in matrix C
+			
+			add r8,1
+			cmp r8, QWORD[Bcols]
+			jne colBLoop
+		
+		mov rax, QWORD[Acols]				; number of columns in matrix A
+		imul rax, 8							; memory space in one column of matrix A
+		add rdi,rax							; move matrix A pointer to next row
+		
+		add rdx, 1	
+		cmp rdx, QWORD[Arows]
+		jne rowALoop
+	
+	mov rax, 0
+	ret
 	
 formatNewLine:
 	db `\n`,0
@@ -155,18 +229,20 @@ formatInt:
 formatIntWidth:
 	db `%*d`,0
 
-section .data
 openBracket:
 	db '[',0
 closeBracket:
 	db ']',0
+	
+section .data
+mostDigits:
+	dq 0
+
 matrixA:
 	dq 0
 Arows:
 	dq 0
 Acols:
-	dq 0
-mostDigits:
 	dq 0
 	
 matrixB:
@@ -174,4 +250,7 @@ matrixB:
 Brows:
 	dq 0
 Bcols:
+	dq 0
+	
+nextRowB:
 	dq 0
